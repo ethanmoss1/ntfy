@@ -16,6 +16,7 @@
 ;; Interface to use the https://ntfy.sh service (or self-hosted version) to send notification from Emacs.
 ;;
 ;;; Code:
+(require 'url)
 
 (defcustom ntfy-server nil
   "Set server for ntfy service."
