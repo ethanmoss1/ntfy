@@ -4,8 +4,8 @@
 
 ;; Author: Shom Bandopadhaya <shom@bandopadhaya.com>
 ;; Created: 2022-04-30
-;; Modified: 2022-05-04
-;; Version: 0.1.2
+;; Modified: 2025-01-05
+;; Version: 0.2.0
 ;; Keywords: ntfy notification push-notification pub-sub
 ;; Package-Requires: ((emacs "27.2") (url "22.1"))
 ;; SPDX-License-Identifier: MIT
