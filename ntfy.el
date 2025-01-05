@@ -57,13 +57,13 @@ Custom HEADER and TAGS are set for the notification."
   (ntfy--publish-message message header tags))
 
 (defun ntfy--publish-message (message &optional header tags)
-  "Publish message to server with curl with MESSAGE.
+  "Publish message to server with Emacs Lib URL with MESSAGE.
 Configured HEADER and TAGS are used unless specified."
-  (start-process "nfty.el" nil "curl"
-		 "-H" (format "Title: %s" (or header ntfy-header))
-		 "-H" (format "Tags: %s" (or tags ntfy-tags))
-		 "-d" (format "%s" message)
-		 (format "%s/%s" ntfy-server ntfy-topic)))
+  (let ((url-request-method "POST")
+        (url-request-data message)
+        (url-request-extra-headers `(("Title" . ,(or header ntfy-header))
+                                     ("Tags" . ,(or tags ntfy-tags)))))
+    (url-retrieve-synchronously (format "%s/%s" ntfy-server ntfy-topic))))
 
 (defun ntfy-send-url (url)
   "Send URL from mini-buffer."
@@ -71,13 +71,13 @@ Configured HEADER and TAGS are used unless specified."
   (ntfy--publish-url url))
 
 (defun ntfy--publish-url (url)
-"Publish URL to server with curl."
-(start-process "nfty.el" nil "curl"
-		 "-H" (format "Title: %s" "Emacs shared a URL")
-		 "-H" (format "Tags: %s" "link")
-		 "-H" (format "Actions: view, %s, %s" url url)
-		 "-d" (format "%s" url)
-		 (format "%s/%s" ntfy-server ntfy-topic)))
+  "Publish URL to server with Emacs Lib URL."
+  (let ((url-request-method "POST")
+        (url-request-data (concat "Click to follow the shared URL;\n" url))
+        (url-request-extra-headers `(("Title" . "Emacs shared a URL")
+                                     ("Tags" . "link")
+                                     ("Actions" . ,(format "view, View Link, %s" url url)))))
+    (url-retrieve-synchronously (format "%s/%s" ntfy-server ntfy-topic))))
 
 (provide 'ntfy)
 ;;; ntfy.el ends here
