@@ -7,21 +7,21 @@
 ;; Modified: 2022-05-04
 ;; Version: 0.1.2
 ;; Keywords: ntfy notification push-notification pub-sub
-;; Package-Requires: ((emacs "27.2") (curl))
+;; Package-Requires: ((emacs "27.2"))
 ;; SPDX-License-Identifier: MIT
 
 ;; This file is not part of GNU Emacs.
 
 ;;; Commentary:
 ;; Interface to use the https://ntfy.sh service (or self-hosted version) to send notification from Emacs.
-;; 
+;;
 ;;; Code:
 
 (defcustom ntfy-server nil
   "Set server for ntfy service."
   :group 'ntfy
   :type 'string)
-  
+
 (defcustom ntfy-topic nil
   "Set ntfy topic/channel."
   :group 'ntfy
