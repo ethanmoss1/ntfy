@@ -7,7 +7,7 @@
 ;; Modified: 2025-01-05
 ;; Version: 0.2.0
 ;; Keywords: ntfy notification push-notification pub-sub
-;; Package-Requires: ((emacs "27.2") (url "22.1"))
+;; Package-Requires: ((emacs "27.2"))
 ;; SPDX-License-Identifier: MIT
 
 ;; This file is not part of GNU Emacs.
