@@ -39,17 +39,20 @@ Use comma separated string, see https://ntfy.sh/docs/publish/#tags-emojis for de
   :group 'ntfy
   :type 'string)
 
+;;;###autoload
 (defun ntfy-send-message (message)
   "Send ad-hoc MESSAGE from mini-buffer as notification."
   (interactive "sEnter message:")
   (ntfy--publish-message message))
 
+;;;###autoload
 (defun ntfy-send-message-with-header (header message)
   "Send ad-hoc MESSAGE from mini-buffer with custom HEADER as notification."
   (interactive "sEnter header: \nsEnter message: ")
   (setq ntfy-header header)
   (ntfy--publish-message message header))
 
+;;;###autoload
 (defun ntfy-send-message-with-header-and-tags (tags header message)
   "Send ad-hoc MESSAGE from mini-buffer.
 Custom HEADER and TAGS are set for the notification."
@@ -65,6 +68,7 @@ Configured HEADER and TAGS are used unless specified."
                                      ("Tags" . ,(or tags ntfy-tags)))))
     (url-retrieve-synchronously (format "%s/%s" ntfy-server ntfy-topic))))
 
+;;;###autoload
 (defun ntfy-send-url (url)
   "Send URL from mini-buffer."
   (interactive "sEnter URL: \n")
