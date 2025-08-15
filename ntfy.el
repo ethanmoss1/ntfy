@@ -18,6 +18,9 @@
 ;;; Code:
 (require 'url)
 
+(defgroup ntfy ()
+  "Notification publishing in Emacs")
+
 (defcustom ntfy-server nil
   "Set server for ntfy service."
   :group 'ntfy
