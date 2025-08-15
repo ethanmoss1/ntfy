@@ -43,6 +43,16 @@ Use comma separated string, see https://ntfy.sh/docs/publish/#tags-emojis for de
   :group 'ntfy
   :type 'string)
 
+(defcustom ntfy-priority 3
+  "Set the message priority for the notification."
+  :group 'ntfy
+  :type '(choice (const :tag "urgent/max" 5)
+                 (const :tag "high" 4)
+                 (const :tag "default" 3)
+                 (const :tag "low" 2)
+                 (const :tag "min" 1)))
+
+
 ;;;###autoload
 (defun ntfy-send-message (message)
   "Send ad-hoc MESSAGE from mini-buffer as notification."
