@@ -86,5 +86,24 @@ Configured HEADER and TAGS are used unless specified."
                                      ("Actions" . ,(format "view, View Link, %s" url url)))))
     (url-retrieve-synchronously (format "%s/%s" ntfy-server ntfy-topic))))
 
+(defun ntfy--check-inputs (message &optional header tags)
+  "Validates HEADER, MESSAGE, and TAGS for newlines before sending.
+
+  HEADER, MESSAGE, and TAGS must be strings without newline characters.
+  If any argument contains a newline, signals a user-error."
+  ;; Check the 'message' string for a newline character
+  ;; TODO Message checks?
+
+  (when (string-match-p "\n" header)
+    (user-error "Notification header cannot contain a newline"))
+
+  ;; Regex will only match if every character is one of the following;
+  ;;  - Any lowercase letter a-z OR
+  ;;  - Any lowercase letter, a comma or underscore, followed by any lowercase letter
+  (unless (string-match-p "^\\([a-z]\\|[a-z][,_][a-z]\\)+$" tags)
+    (user-error "Notification Tags cannot contain anything other than the lower case
+characters a-z, a comma, or an underscore")))
+
+
 (provide 'ntfy)
 ;;; ntfy.el ends here
