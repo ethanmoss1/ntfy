@@ -78,8 +78,9 @@ Use comma separated string, see https://ntfy.sh/docs/publish/#tags-emojis for de
   Configured HEADER and TAGS are used unless specified."
   ;; Check the inputs.
   (ntfy--check-inputs message
-                      (if header header)
-                      (if tags tags))
+                      (or header "valid")
+                      (or tags "heart")
+                      (or priority 1))
 
   ;; If no error is thrown, send the message.
   (let ((url-request-method "POST")
@@ -104,7 +105,7 @@ Use comma separated string, see https://ntfy.sh/docs/publish/#tags-emojis for de
                                      ("Actions" . ,(format "view, View Link, %s" url url)))))
     (url-retrieve-synchronously (format "%s/%s" ntfy-server ntfy-topic))))
 
-(defun ntfy--check-inputs (message &optional header tags)
+(defun ntfy--check-inputs (message &optional header tags priority)
   "Validates HEADER, MESSAGE, and TAGS for newlines before sending.
 
   HEADER, MESSAGE, and TAGS must be strings without newline characters.
@@ -114,6 +115,11 @@ Use comma separated string, see https://ntfy.sh/docs/publish/#tags-emojis for de
 
   (when (string-match-p "\n" header)
     (user-error "Notification header cannot contain a newline"))
+
+  ;; Check the priority
+  (if (or (> priority 5)
+          (< priority 1))
+      (user-error "Notification priority cannot be greater than 5 or less than 1"))
 
   ;; Regex will only match if every character is one of the following;
   ;;  - Any lowercase letter a-z OR
