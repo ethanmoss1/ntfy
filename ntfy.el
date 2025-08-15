@@ -13,8 +13,9 @@
 ;; This file is not part of GNU Emacs.
 
 ;;; Commentary:
-;; Interface to use the https://ntfy.sh service (or self-hosted version) to send notification from Emacs.
-;;
+;; Interface to use the https://ntfy.sh service (or self-hosted version) to send
+;; notification from Emacs.
+
 ;;; Code:
 (require 'url)
 
@@ -58,7 +59,7 @@ Use comma separated string, see https://ntfy.sh/docs/publish/#tags-emojis for de
 ;;;###autoload
 (defun ntfy-send-message-with-header-and-tags (tags header message)
   "Send ad-hoc MESSAGE from mini-buffer.
-Custom HEADER and TAGS are set for the notification."
+  Custom HEADER and TAGS are set for the notification."
   (interactive "sEnter tags (emoji codes, comma separated no spaces): \nsEnter header: \nsEnter message: ")
   (ntfy--publish-message message header tags))
 
