@@ -73,13 +73,20 @@ Use comma separated string, see https://ntfy.sh/docs/publish/#tags-emojis for de
   (interactive "sEnter tags (emoji codes, comma separated no spaces): \nsEnter header: \nsEnter message: ")
   (ntfy--publish-message message header tags))
 
-(defun ntfy--publish-message (message &optional header tags)
+(defun ntfy--publish-message (message &optional header tags priority)
   "Publish message to server with Emacs Lib URL with MESSAGE.
-Configured HEADER and TAGS are used unless specified."
+  Configured HEADER and TAGS are used unless specified."
+  ;; Check the inputs.
+  (ntfy--check-inputs message
+                      (if header header)
+                      (if tags tags))
+
+  ;; If no error is thrown, send the message.
   (let ((url-request-method "POST")
         (url-request-data message)
         (url-request-extra-headers `(("Title" . ,(or header ntfy-header))
-                                     ("Tags" . ,(or tags ntfy-tags)))))
+                                     ("Tags" . ,(or tags ntfy-tags))
+                                     ("Priority" . ,(int-to-string (or priority ntfy-priority))))))
     (url-retrieve-synchronously (format "%s/%s" ntfy-server ntfy-topic))))
 
 ;;;###autoload
