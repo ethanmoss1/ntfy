@@ -101,12 +101,13 @@ ntfy server.")
                                  :message ,message)))
 
 ;;;###autoload
-(defun ntfy-message-with-title-and-tags (title message tags)
+(defun ntfy-message-with-title-and-tags (title message)
   "A simple way of sending a notification message with a title and tag(s)"
-  (interactive "sTitle: \nsMessage: \nsTags: ")
-  (ntfy--generate-valid-plist `( :title ,title
-                                 :message ,message
-                                 :tags ,(vconcat tags))))
+  (interactive "sTitle: \nsMessage: ")
+  (let ((tags (ntfy--interactive-emoji-selector)))
+    (ntfy--generate-valid-plist `( :title ,title
+                                   :message ,message
+                                   :tags ,tags))))
 
 ;;;--- Internal Functions
 (defun ntfy--interactive-emoji-selector ()
