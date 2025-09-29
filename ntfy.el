@@ -107,6 +107,33 @@ Ensure URL contains the correct scheme. e.g. HTTPS"
                                      ("Actions" . ,(format "view, View Link, %s" url url)))))
     (url-retrieve-synchronously (format "%s/%s" ntfy-server ntfy-topic))))
 
+(defun ntfy--publish-android-intent (intent)
+  "Publish an android intent"
+  (let ((url-request-method "POST")
+        (url-request-data "Click")
+        (url-request-extra-headers `(("Title" . "Emacs shared a URL")
+                                     ("Tags" . "link")
+                                     ("Priority" . "3")
+                                     ("Actions" . ,(format "broadcast, Take picture, extras.cmd=pic, extras.camera=front")))))
+    (url-retrieve-synchronously (format "%s/%s" ntfy-server ntfy-topic))))
+
+
+;; Scheduled Delivery
+(defun ntfy--publish-message-plist (plist)
+  "Publish a message using a lisp PLIST
+
+The plist is converted to JSON and set to the NTFY server."
+  (let ((url-request-method "POST")
+        (url-request-data (json-encode `( :topic ,(or topic ntfy-topic)
+                                          :title ,(or header ntfy-header)
+                                          :tags ,(vconcat (or tags ntfy-tags))
+                                          :priority ,(or priority ntfy-priority)
+                                          :message "This is a test message"
+                                          :delay nil
+                                          :actions nil
+                                          :click nil))))
+    (url-retrieve-synchronously ntfy-server)))
+
 
 (defun ntfy--check-inputs (message &optional header tags priority)
   "Validates HEADER, MESSAGE, TAGS and Priority before sending."
