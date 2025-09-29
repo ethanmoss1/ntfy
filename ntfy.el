@@ -27,8 +27,6 @@
 ;; Interface to use the https://ntfy.sh service (or self-hosted version) to send
 ;; notification from Emacs.
 
-;; TODO: tags in most of the functions need converting to vector of strings as
-;; well as a check to ensure they are
 ;; TODO: Add a list of all the possible tags that result in emojis in the header
 ;; TODO: The doc strings need to be done.
 ;; TODO: Readme needs to be crafted
@@ -60,7 +58,7 @@
 Use comma separated string, see
 https://ntfy.sh/docs/publish/#tags-emojis for details.
 
-It is important to sent this via ’setopt’ or via the customise interface."
+It is important to sent this via ‘setopt’ or via ‘customise’."
   :group 'ntfy
   :type '(repeat string)
   :set (lambda (sym defs)
@@ -78,11 +76,9 @@ It is important to sent this via ’setopt’ or via the customise interface."
 
 (defvar ntfy--vector-tags []
   "This variable is set by the ntfy-tags customise variable when set.
-
 It is a vector that contains strings that each are a tag sent to the
 ntfy server.")
 
-;; TODO: Is it worth doing this?
 (defvar ntfy--tags-emojis nil
   "A list of all the possible tags that result in an emoji in the header")
 
@@ -109,6 +105,18 @@ ntfy server.")
                                    :message ,message
                                    :tags ,tags))))
 
+;;;###autoload
+(defun ntfy-change-tags ()
+  "Update the tags for ntfy messages interactively.
+
+This allows you to select emojis that are valid to show in ntfy messages
+and update the variable that holds them."
+  (interactive)
+  (let ((emojis (ntfy--interactive-emoji-selector)))
+    (setq ntfy--tags-emojis emojis)
+    (setq ntfy-tags (append emojis nil))))
+
+
 ;;;--- Internal Functions
 (defun ntfy--interactive-emoji-selector ()
   "Interactively select multiple emojis and return them as a vector of
@@ -122,17 +130,14 @@ comma-separated tags."
                        (error "Emoji list file not found at: %s" emoji-file)))
          (emojis-selected ())
          (selection nil))
-
     ;; This will continue until a blank selection is done or M-Ret is pressed.
     (while (not (string-empty-p selection))
       (setq selection (completing-read "Select an emoji (M-Ret to exit): " emoji-list))
-
       (unless (string-empty-p selection)
         (let* ((selected-pair (cl-find selection emoji-list
                                        :key 'car
                                        :test 'string-equal))
                (emoji-tag (cdr selected-pair)))
-
           (setq emojis-selected(append emojis-selected (list emoji-tag))))))
     ;; Return as a vector
     (vconcat emojis-selected)))
@@ -160,7 +165,7 @@ By def .....
             :topic ,(or (plist-get options :topic) ntfy-topic "emacs")
             ;; TODO function that checks title before.
             :title ,(or (plist-get options :title) ntfy-title "No Title")
-            :tags ,(or (plist-get options :tags) (vconcat ntfy-title) ["link"])  ; (or (plist-get options :tags) ntfy-tags nil))
+            :tags ,(or (plist-get options :tags) ntfy--tags-emojis ["link"])  ; (or (plist-get options :tags) ntfy-tags nil))
             :priority ,(or (plist-get options :priority) ntfy-priority 3)
             :message ,(or (plist-get options :message) "")
             :attach ,(or (plist-get options :attach) nil)
