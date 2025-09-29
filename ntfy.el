@@ -3,48 +3,72 @@
 ;; Copyright (C) 2022 Shom
 
 ;; Author: Shom Bandopadhaya <shom@bandopadhaya.com>
-;; Created: 2022-04-30
-;; Modified: 2025-01-05
-;; Version: 0.2.0
-;; Keywords: ntfy notification push-notification pub-sub
+;; Version 0.3.0
+;; Keywords: lisp
 ;; Package-Requires: ((emacs "27.2"))
 ;; SPDX-License-Identifier: MIT
 
 ;; This file is not part of GNU Emacs.
 
+;; This program is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 ;;; Commentary:
 ;; Interface to use the https://ntfy.sh service (or self-hosted version) to send
 ;; notification from Emacs.
 
-;;; Code:
-(require 'url)
+;; TODO: tags in most of the functions need converting to vector of strings as
+;; well as a check to ensure they are
+;; TODO: Add a list of all the possible tags that result in emojis in the header
+;; TODO: The doc strings need to be done.
+;; TODO: Readme needs to be crafted
 
-(defgroup ntfy ()
-  "Notification publishing in Emacs")
+;;; Code:
+(require 'url)  ; Built-in
+(require 'json)  ; Built-in
+
+;;;--- Variables
+(defgroup ntfy () "Notification publishing in Emacs")
 
 (defcustom ntfy-server nil
-  "Set server for ntfy service."
+  "Set server for ntfy.el to send notifications."
   :group 'ntfy
   :type 'string)
 
 (defcustom ntfy-topic nil
-  "Set ntfy topic/channel."
+  "Set ntfy topic/channel to send notifications."
   :group 'ntfy
   :type 'string)
 
-(defcustom ntfy-header nil
-  "Set header message for the notification."
+(defcustom ntfy-title nil
+  "Set the default title of the message for the notification."
   :group 'ntfy
   :type 'string)
 
 (defcustom ntfy-tags nil
   "Set the emoji that'll appear before the header message.
-Use comma separated string, see https://ntfy.sh/docs/publish/#tags-emojis for details."
+Use comma separated string, see
+https://ntfy.sh/docs/publish/#tags-emojis for details.
+
+It is important to sent this via ’setopt’ or via the customise interface."
   :group 'ntfy
-  :type 'string)
+  :type '(repeat string)
+  :set (lambda (sym defs)
+         (custom-set-default sym defs)
+         (setq ntfy--vector-tags (vconcat ntfy-tags))))
 
 (defcustom ntfy-priority 3
-  "Set the message priority for the notification."
+  "Set the message priority for the notification. This ranges from Minimum (1) to Urgent/Maximum (5)"
   :group 'ntfy
   :type '(choice (const :tag "urgent/max" 5)
                  (const :tag "high" 4)
@@ -52,82 +76,107 @@ Use comma separated string, see https://ntfy.sh/docs/publish/#tags-emojis for de
                  (const :tag "low" 2)
                  (const :tag "min" 1)))
 
+(defvar ntfy--vector-tags []
+  "This variable is set by the ntfy-tags customise variable when set.
+
+It is a vector that contains strings that each are a tag sent to the
+ntfy server.")
+
+;; TODO: Is it worth doing this?
+(defvar ntfy--tags-emojis nil
+  "A list of all the possible tags that result in an emoji in the header")
+
+;;;--- User Functions
+;;;###autoload
+(defun ntfy-message (message)
+  "A simple way of sending a notification message"
+  (interactive "sMessage:")
+  (ntfy--generate-valid-plist `(:message ,message)))
 
 ;;;###autoload
-(defun ntfy-send-message (message)
-  "Send ad-hoc MESSAGE from mini-buffer as notification."
-  (interactive "sEnter message:")
-  (ntfy--publish-message message))
+(defun ntfy-message-with-title (title message)
+  "A simple way of sending a notification message with a title"
+  (interactive "sTitle: \nsMessage: ")
+  (ntfy--generate-valid-plist `( :title ,title
+                                 :message ,message)))
 
 ;;;###autoload
-(defun ntfy-send-message-with-header (header message)
-  "Send ad-hoc MESSAGE from mini-buffer with custom HEADER as notification."
-  (interactive "sEnter header: \nsEnter message: ")
-  (setq ntfy-header header)
-  (ntfy--publish-message message header))
+(defun ntfy-message-with-title-and-tags (title message tags)
+  "A simple way of sending a notification message with a title and tag(s)"
+  (interactive "sTitle: \nsMessage: \nsTags: ")
+  (ntfy--generate-valid-plist `( :title ,title
+                                 :message ,message
+                                 :tags ,(vconcat tags))))
 
-;;;###autoload
-(defun ntfy-send-message-with-header-and-tags (tags header message)
-  "Send ad-hoc MESSAGE from mini-buffer.
-  Custom HEADER and TAGS are set for the notification."
-  (interactive "sEnter tags (emoji codes, comma separated no spaces): \nsEnter header: \nsEnter message: ")
-  (ntfy--publish-message message header tags))
+;;;--- Internal Functions
+(defun ntfy--interactive-emoji-selector ()
+  "Interactively select multiple emojis and return them as a vector of
+comma-separated tags."
+  (interactive)
+  (let* ((emoji-file (expand-file-name "emoji-list"))  ; TODO this is broken
+         (emoji-list (if (file-exists-p emoji-file)
+                         (with-temp-buffer
+                           (insert-file-contents emoji-file)
+                           (read (current-buffer)))
+                       (error "Emoji list file not found at: %s" emoji-file)))
+         (emojis-selected ())
+         (selection nil))
 
-(defun ntfy--publish-message (message &optional header tags priority)
-  "Publish message to server with Emacs Lib URL with MESSAGE.
-  Configured HEADER and TAGS are used unless specified."
-  ;; Check the inputs.
-  (ntfy--check-inputs message
-                      (or header "valid")
-                      (or tags "heart")
-                      (or priority 1))
+    ;; This will continue until a blank selection is done or M-Ret is pressed.
+    (while (not (string-empty-p selection))
+      (setq selection (completing-read "Select an emoji (M-Ret to exit): " emoji-list))
 
-  ;; If no error is thrown, send the message.
+      (unless (string-empty-p selection)
+        (let* ((selected-pair (cl-find selection emoji-list
+                                       :key 'car
+                                       :test 'string-equal))
+               (emoji-tag (cdr selected-pair)))
+
+          (setq emojis-selected(append emojis-selected (list emoji-tag))))))
+    ;; Return as a vector
+    (vconcat emojis-selected)))
+
+(defun ntfy--generate-valid-plist (options)
+  "This function takes a incomplete or complete plist to uses it to create
+a complete and valid plist to be converted to JSON.
+
+:topic  The topic to send the notification message.
+If topic is supplied, this is the topic that the message is sent to. If
+this is not sent, the fallback of the variable `ntfy-topic’ is used,
+Otherwise the topic is set to ’emacs’.
+
+:title The title of the notification
+By def .....
+
+:another1
+
+...
+"
+  (unless (plistp options)
+    (user-error "The input OPTIONS is not of type plist."))
+  (let* ((valid-plist  ; Form a valid plist from the input plist provided
+          `(;; TODO Check topic is valid?
+            :topic ,(or (plist-get options :topic) ntfy-topic "emacs")
+            ;; TODO function that checks title before.
+            :title ,(or (plist-get options :title) ntfy-title "No Title")
+            :tags ,(or (plist-get options :tags) (vconcat ntfy-title) ["link"])  ; (or (plist-get options :tags) ntfy-tags nil))
+            :priority ,(or (plist-get options :priority) ntfy-priority 3)
+            :message ,(or (plist-get options :message) "")
+            :attach ,(or (plist-get options :attach) nil)
+            :filename ,(or (plist-get options :filename) nil)
+            :click ,(or (plist-get options :click) nil)
+            :actions ,(or (plist-get options :actions) nil)
+            :delay ,(or (plist-get options :delay) nil))))
+    (ntfy--publish-message-plist valid-plist)))
+
+(defun ntfy--publish-message-plist (valid-plist &optional server)
+  "TODO
+This uses the blah-blah function to validate a plist ready for encoding
+to json. This is sent of to the ntfy server unless the optional argument
+is given for a different server"
   (let ((url-request-method "POST")
-        (url-request-data message)
-        (url-request-extra-headers `(("Title" . ,(or header ntfy-header))
-                                     ("Tags" . ,(or tags ntfy-tags))
-                                     ("Priority" . ,(int-to-string (or priority ntfy-priority))))))
-    (url-retrieve-synchronously (format "%s/%s" ntfy-server ntfy-topic))))
+        (url-request-data (json-encode valid-plist)))
+    (message url-request-data)
+    (url-retrieve-synchronously (or server ntfy-server))))
 
-;;;###autoload
-(defun ntfy-send-url (url)
-  "Send URL from mini-buffer."
-  (interactive "sEnter URL: \n")
-  (ntfy--publish-url url))
-
-(defun ntfy--publish-url (url)
-  "Publish URL to server with Emacs Lib URL."
-  (let ((url-request-method "POST")
-        (url-request-data (concat "Click to follow the shared URL;\n" url))
-        (url-request-extra-headers `(("Title" . "Emacs shared a URL")
-                                     ("Tags" . "link")
-                                     ("Actions" . ,(format "view, View Link, %s" url url)))))
-    (url-retrieve-synchronously (format "%s/%s" ntfy-server ntfy-topic))))
-
-(defun ntfy--check-inputs (message &optional header tags priority)
-  "Validates HEADER, MESSAGE, and TAGS for newlines before sending.
-
-  HEADER, MESSAGE, and TAGS must be strings without newline characters.
-  If any argument contains a newline, signals a user-error."
-  ;; Check the 'message' string for a newline character
-  ;; TODO Message checks?
-
-  (when (string-match-p "\n" header)
-    (user-error "Notification header cannot contain a newline"))
-
-  ;; Check the priority
-  (if (or (> priority 5)
-          (< priority 1))
-      (user-error "Notification priority cannot be greater than 5 or less than 1"))
-
-  ;; Regex will only match if every character is one of the following;
-  ;;  - Any lowercase letter a-z OR
-  ;;  - Any lowercase letter, a comma or underscore, followed by any lowercase letter
-  (unless (string-match-p "^\\([a-z]\\|[a-z][,_][a-z]\\)+$" tags)
-    (user-error "Notification Tags cannot contain anything other than the lower case
-characters a-z, a comma, or an underscore")))
-
-
-(provide 'ntfy)
-;;; ntfy.el ends here
+;;; ntfy-json.el ends here
