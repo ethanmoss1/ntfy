@@ -1,4 +1,4 @@
-;;; ntfy.el --- publish notification using ntfy.sh -*- lexical-binding: t; -*-
+;;; ntfy.el --- publish notification using ntfy.sh   -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2022 Shom
 
@@ -17,7 +17,7 @@
 ;; notification from Emacs.
 
 ;;; Code:
-(require 'url)
+(require 'url)  ;; Built-in
 
 (defgroup ntfy ()
   "Notification publishing in Emacs")
@@ -52,7 +52,6 @@ Use comma separated string, see https://ntfy.sh/docs/publish/#tags-emojis for de
                  (const :tag "low" 2)
                  (const :tag "min" 1)))
 
-
 ;;;###autoload
 (defun ntfy-send-message (message)
   "Send ad-hoc MESSAGE from mini-buffer as notification."
@@ -78,9 +77,9 @@ Use comma separated string, see https://ntfy.sh/docs/publish/#tags-emojis for de
   Configured HEADER and TAGS are used unless specified."
   ;; Check the inputs.
   (ntfy--check-inputs message
-                      (or header "valid")
-                      (or tags "heart")
-                      (or priority 1))
+                      (or header "header")
+                      (or tags "tags")
+                      (or priority 3))
 
   ;; If no error is thrown, send the message.
   (let ((url-request-method "POST")
@@ -97,37 +96,38 @@ Use comma separated string, see https://ntfy.sh/docs/publish/#tags-emojis for de
   (ntfy--publish-url url))
 
 (defun ntfy--publish-url (url)
-  "Publish URL to server with Emacs Lib URL."
+  "Publish URL to server with Emacs Lib URL.
+
+Ensure URL contains the correct scheme. e.g. HTTPS"
   (let ((url-request-method "POST")
-        (url-request-data (concat "Click to follow the shared URL;\n" url))
+        (url-request-data "Click to follow the shared URL")
         (url-request-extra-headers `(("Title" . "Emacs shared a URL")
                                      ("Tags" . "link")
+                                     ("Priority" . "3")
                                      ("Actions" . ,(format "view, View Link, %s" url url)))))
     (url-retrieve-synchronously (format "%s/%s" ntfy-server ntfy-topic))))
 
-(defun ntfy--check-inputs (message &optional header tags priority)
-  "Validates HEADER, MESSAGE, and TAGS for newlines before sending.
 
-  HEADER, MESSAGE, and TAGS must be strings without newline characters.
-  If any argument contains a newline, signals a user-error."
-  ;; Check the 'message' string for a newline character
+(defun ntfy--check-inputs (message &optional header tags priority)
+  "Validates HEADER, MESSAGE, TAGS and Priority before sending."
   ;; TODO Message checks?
 
+  ;; Header cannot have a new line in it.
   (when (string-match-p "\n" header)
     (user-error "Notification header cannot contain a newline"))
 
-  ;; Check the priority
+  ;; Check the priority, needs to be from 1 to 5 inclusive.
   (if (or (> priority 5)
           (< priority 1))
       (user-error "Notification priority cannot be greater than 5 or less than 1"))
 
+  ;; Tags are particular, with what is allowed.
   ;; Regex will only match if every character is one of the following;
   ;;  - Any lowercase letter a-z OR
   ;;  - Any lowercase letter, a comma or underscore, followed by any lowercase letter
   (unless (string-match-p "^\\([a-z]\\|[a-z][,_][a-z]\\)+$" tags)
     (user-error "Notification Tags cannot contain anything other than the lower case
 characters a-z, a comma, or an underscore")))
-
 
 (provide 'ntfy)
 ;;; ntfy.el ends here
