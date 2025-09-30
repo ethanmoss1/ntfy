@@ -113,4 +113,49 @@ or once a lengthy compilation has completed!
                                  :priority 5
                                  :delay "5m"))
 
+
+  ;; New testing;
+  (defun ntfy--send-message (message &optional title tags priority filename attachment click actions delay icon)
+    "docstring
+  X-Message 	  Main body of the message as shown in the notification
+  X-Title 	  Message title
+  X-Priority 	  Message priority
+  X-Tags        Tags and emojis
+  X-Delay 	  Timestamp or duration for delayed delivery
+  X-Actions 	  JSON array or short format of user actions
+  X-Click 	  URL to open when notification is clicked
+  X-Attach 	  URL to send as an attachment or
+  X-Filename 	  Optional attachment filename, as it appears in the client
+  X-Markdown 	  Enable Markdown formatting in the notification body
+  X-Icon 	      URL to use as notification icon
+  "
+    (let ((url-request-method "POST")
+          (url-request-extra-headers `(("Filename" . ,filename)
+                                       ("Message" . "Test Message")))
+          (url-request-data ))
+      (url-retrieve (concat ntfy-server "/emacs") (lambda (status)
+                                                    (switch-to-buffer (current-buffer))))))
+
+
+  (defun test-filename (filename)
+    ""
+    (when filename (cons "filename" filename)))
+
+  (let ((filename "cat.jpg")
+        (other-filename nil))
+    (list (test-filename filename)
+          (test-filename other-filename)))
+
+
+  (defun ntfy--publish-message (message &optional server topic title tags attachment)
+    ""
+    (let ((url-request-method "POST")
+          (url-request-extra-headers (list (ntfy--title title)
+                                           (ntfy--message message)
+                                           (ntfy--tags tags)))
+          (url-request-data (ntfy--sort-data attachment)))
+      (url-retrieve-synchronously (concat (or server ntfy-server) "/" topic))))
+
+
+  ;; TODO:
 #+end_src
