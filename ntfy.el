@@ -208,18 +208,59 @@ should be delivered to subscribers. It defaults to `nil`."
     (user-error "The input OPTIONS is not of type plist."))
   (let* ((valid-plist  ; Form a valid plist from the input plist provided
           `(;; TODO Check topic is valid?
-            :topic ,(or (plist-get options :topic) ntfy-topic "emacs")
-            ;; TODO function that checks title before.
-            :title ,(or (plist-get options :title) ntfy-title "No Title")
-            :tags ,(or (plist-get options :tags) ntfy--tags-emojis ["link"])  ; (or (plist-get options :tags) ntfy-tags nil))
-            :priority ,(or (plist-get options :priority) ntfy-priority 3)
-            :message ,(or (plist-get options :message) "")
-            :attach ,(or (plist-get options :attach) nil)
-            :filename ,(or (plist-get options :filename) nil)
-            :click ,(or (plist-get options :click) nil)
-            :actions ,(or (plist-get options :actions) nil)
-            :delay ,(or (plist-get options :delay) nil))))
+            :topic ,(or (plist-get options :topic)
+                        ntfy-topic
+                        "emacs")
+            ;; TODO function that checks valid title before?
+            :title ,(or (plist-get options :title)  ; does this contain new lines?
+                        ntfy-title
+                        "No Title")
+            :tags ,(or (plist-get options :tags)
+                       ntfy--tags-emojis
+                       ["link"])
+            :priority ,(or (plist-get options :priority)
+                           ntfy-priority
+                           3)
+            :message ,(or (plist-get options :message)
+                          "")
+            :attach ,(ntfy--attach-function options)
+            ;; Only use filename if :attach option is provided.
+            :filename ,(ntfy--filename-function options)
+            ;; TODO: the rest of these; vvv
+            :click ,(or (plist-get options :click)
+                        nil)
+            :actions ,(or (plist-get options :actions)
+                          nil)
+            :delay ,(or (plist-get options :delay)
+                        nil))))
     (ntfy--publish-message-plist valid-plist)))
+
+(defun ntfy--attach-function (options)
+  "Check the options for the :attach property, and check if it is a local
+or remote file.
+NOTE: Currently, local files are not accepted as part of a limitation of
+’publish as json’"
+  (let* ((attach (plist-get options :attach))
+         (type (url-type (url-generic-parse-url attach))))
+
+    (cond ((member type '("http" "https")) attach) ;; URL
+          ((file-name-absolute-p attach)  ; Local File
+           (user-error "Local files not supported via ’publish as JSON’ in ntfy")
+           ;; ;; Current "implementation" of a feature that doesnt currently exist
+           ;; (let ((file-size (file-attribute-size (file-attributes attach))))
+           ;;   (if (>= file-size (* 15 1024 1024))
+           ;;       (user-error "File is larger than 15MB. File is %sMBs"
+           ;;                   (/ file-size 1024 1024))
+           ;;     ( :name "attachment.jpg")
+           ;;     (with-temp-buffer
+           ;;       (insert-file-contents-literally attach)
+           ;;       (buffer-string))))
+           ))))
+
+(defun ntfy--filename-function (options)
+  ""
+  (when (plist-get options :attach)
+    (plist-get options :filename)))
 
 (defun ntfy--publish-message-plist (valid-plist &optional server)
   "TODO
