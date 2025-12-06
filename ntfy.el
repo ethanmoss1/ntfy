@@ -76,7 +76,7 @@ https://ntfy.sh/docs/publish/#tags-emojis for details."
 ;;;###autoload
 (defun ntfy-message (message)
   "A simple way of sending a notification message"
-  (interactive "sMessage:")
+  (interactive "sMessage: ")
   (ntfy--publish-message message))
 
 ;;;###autoload
@@ -100,7 +100,6 @@ This allows you to select emojis that are valid to show in ntfy messages
 and update the variable that holds them."
   (interactive)
   (let ((emojis (ntfy--interactive-emoji-selector)))
-    (setq ntfy--tags-emojis emojis)
     (setq ntfy-tags (append emojis nil))))
 
 
@@ -126,7 +125,7 @@ comma-separated tags."
                                        :test 'string-equal))
                (emoji-tag (cdr selected-pair)))
           (setq emojis-selected(append emojis-selected (list emoji-tag))))))
-    ;; Return as a vector
+    ;; Return
     emojis-selected))
 
 (defun ntfy--attach (attachment)
@@ -143,9 +142,42 @@ NOTE: Currently, local files are not accepted as part of a limitation of
                                    (buffer-string))
                                  'utf-8)))))
 
-(defun ntfy--publish-message (message)
-  ""
-  (message message))
+(defun ntfy--check-inputs (message &optional header tags priority)
+  "Validates HEADER, MESSAGE, TAGS and Priority before sending."
+  ;; TODO: Message checks?
+
+  ;; Header cannot have a new line in it.
+  (when (string-match-p "\n" header)
+    (user-error "Notification header cannot contain a newline"))
+
+  ;; Check the priority, needs to be from 1 to 5 inclusive.
+  (if (or (> priority 5) (< priority 1))
+      (user-error "Notification priority cannot be greater than 5 or less than 1"))
+
+  ;; Tags are particular, with what is allowed.
+  ;; Regex will only match if every character is one of the following;
+  ;;  - Any lowercase letter a-z OR
+  ;;  - Any lowercase letter, a comma or underscore, followed by any lowercase letter
+  (unless (string-match-p "^\\([a-z]\\|[a-z][,_][a-z]\\)+$" tags)
+    (user-error "Notification Tags cannot contain anything other than the lower case
+characters a-z, a comma, or an underscore")))
+
+(defun ntfy--publish-message (message &optional title tags priority)
+  "Publish message to server with Emacs Lib URL with MESSAGE.
+  Configured HEADER and TAGS are used unless specified."
+  ;; Check the inputs.
+  (ntfy--check-inputs message
+                      (or title ntfy-title "header")
+                      (or tags ntfy-tags "tags")
+                      (or priority ntfy-priority 3))
+
+  ;; If no error is thrown, send the message.
+  (let ((url-request-method "POST")
+        (url-request-data message)
+        (url-request-extra-headers `(("Title" . ,(or header ntfy-header))
+                                     ("Tags" . ,(or tags ntfy-tags))
+                                     ("Priority" . ,(int-to-string (or priority ntfy-priority))))))
+    (url-retrieve-synchronously (format "%s/%s" ntfy-server ntfy-topic))))
 
 (provide 'ntfy)
 ;;; ntfy.el ends here
