@@ -83,14 +83,14 @@ https://ntfy.sh/docs/publish/#tags-emojis for details."
 (defun ntfy-message-with-title (title message)
   "A simple way of sending a notification message with a title"
   (interactive "sTitle: \nsMessage: ")
-  (ntfy--publish-message message :title title))
+  (ntfy--publish-message message title))
 
 ;;;###autoload
 (defun ntfy-message-with-title-and-tags (title message)
   "A simple way of sending a notification message with a title and tag(s)"
   (interactive "sTitle: \nsMessage: ")
   (let ((tags (ntfy--interactive-emoji-selector)))
-    (ntfy--publish-message message :title title :tags tags)))
+    (ntfy--publish-message message title tags)))
 
 ;;;###autoload
 (defun ntfy-change-tags ()
@@ -108,12 +108,13 @@ and update the variable that holds them."
   "Interactively select multiple emojis and return them as a vector of
 comma-separated tags."
   (interactive)
-  (let* ((emoji-file (expand-file-name "emoji-list"))  ; TODO this is broken
+  (let* ((emoji-file (expand-file-name "emoji-list"))
          (emoji-list (if (file-exists-p emoji-file)
                          (with-temp-buffer
                            (insert-file-contents emoji-file)
                            (read (current-buffer)))
                        (error "Emoji list file not found at: %s" emoji-file)))
+
          (emojis-selected ())
          (selection nil))
     ;; This will continue until a blank selection is done or M-Ret is pressed.
@@ -127,6 +128,7 @@ comma-separated tags."
           (setq emojis-selected(append emojis-selected (list emoji-tag))))))
     ;; Return
     emojis-selected))
+
 
 (defun ntfy--attach (attachment)
   "Check the options for the :attach property, and check if it is a local
@@ -158,9 +160,11 @@ NOTE: Currently, local files are not accepted as part of a limitation of
   ;; Regex will only match if every character is one of the following;
   ;;  - Any lowercase letter a-z OR
   ;;  - Any lowercase letter, a comma or underscore, followed by any lowercase letter
-  (unless (string-match-p "^\\([a-z]\\|[a-z][,_][a-z]\\)+$" tags)
-    (user-error "Notification Tags cannot contain anything other than the lower case
-characters a-z, a comma, or an underscore")))
+  (dolist (tag tags)
+    (message tag)
+    ;; (if (string-match-p "^\\([a-z]\\|[a-z][,_][a-z]\\)+$" tag)
+    (unless (string-match-p "^[a-z0-9\+\-_,]+$" tag)
+      (user-error "Notification Tags cannot contain anything other than the lower case characters a-z, a comma, or an underscore"))))
 
 (defun ntfy--publish-message (message &optional title tags priority)
   "Publish message to server with Emacs Lib URL with MESSAGE.
@@ -174,8 +178,8 @@ characters a-z, a comma, or an underscore")))
   ;; If no error is thrown, send the message.
   (let ((url-request-method "POST")
         (url-request-data message)
-        (url-request-extra-headers `(("Title" . ,(or header ntfy-header))
-                                     ("Tags" . ,(or tags ntfy-tags))
+        (url-request-extra-headers `(("Title" . ,(or title ntfy-header))
+                                     ("Tags" .  ,(mapconcat 'identity (or tags ntfy-tags) ","))
                                      ("Priority" . ,(int-to-string (or priority ntfy-priority))))))
     (url-retrieve-synchronously (format "%s/%s" ntfy-server ntfy-topic))))
 
