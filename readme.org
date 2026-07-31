@@ -54,11 +54,17 @@ Once the package is loaded and configured a notification can be sent by invoking
 This is the first Emacs package I've put together, contributions, suggestions for best practices, and  constructive criticism is very much welcome and appreciated.
 
 Here are some of the potential improvements:
-- Improve documentation and testing.
++ Improve documentation and testing.
   - [X] This has been tested on =Emacs 27.2= & =28.0.92= using =curl= on Pop!_OS (20.04 and 22.04) and Termux.
   - [X] All functions are documented and there are no Flycheck errors or warnings.
-  - [ ] Test on other OSes.
-- Provide more functionality:
+  - [0/5] Test on other OSes.
+    - [ ] Windows 10
+    - [ ] Windows 11
+    - [ ] Linux
+    - [ ] MacOS Intel
+    - [ ] MacOS ARM
+
++ Provide more functionality:
   - [X] Interactively and programmatically set the tag per message as an optional parameter.
   - [ ] Send URL as a clickable item from the Android notification shade.
     - [ ] Special characters break this function. Might need to switch to JSON, can't url-encode curl header.
