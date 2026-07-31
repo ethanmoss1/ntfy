@@ -51,12 +51,12 @@
   :group 'ntfy
   :type 'string)
 
-(defcustom ntfy-title nil
+(defcustom ntfy-title "Emacs Nofitication"
   "Set the default title of the message for the notification."
   :group 'ntfy
   :type 'string)
 
-(defcustom ntfy-tags nil
+(defcustom ntfy-tags '("purple_circle" "loudspeaker")
   "Set the emoji that'll appear before the header message.
 Use comma separated string, see
 https://ntfy.sh/docs/publish/#tags-emojis for details."
