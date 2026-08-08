@@ -17,11 +17,11 @@ Recommended: the package can be installed and configured using =straight.el= usi
     ;; :ensure ( :host :repo :files (:defaults "*.el"))
 
     ;; for the inbuilt package VC install, on emacs >= 30
-    :vc (:url "https://git.sr.ht/~shom/ntfy" :rev :newest)
+    :vc (:url "https://github.com/shombando/ntfy" :rev :newest)
     :config (setopt ntfy-server "https://ntfy.sh"
   		          ntfy-topic "mytopic"
   		          ntfy-header "Notification from emacs"
-  		          ntfy-tags "purple_circle,loudspeaker"
+  				  ntfy-tags '("purple_circle" "loudspeaker")
                     ntfy-priority 3))
 #+end_src
 
@@ -54,24 +54,23 @@ Once the package is loaded and configured a notification can be sent by invoking
 This is the first Emacs package I've put together, contributions, suggestions for best practices, and  constructive criticism is very much welcome and appreciated.
 
 Here are some of the potential improvements:
-+ Improve documentation and testing.
-  - [X] This has been tested on =Emacs 27.2= & =28.0.92= using =curl= on Pop!_OS (20.04 and 22.04) and Termux.
-  - [X] All functions are documented and there are no Flycheck errors or warnings.
-  - [0/5] Test on other OSes.
-    - [ ] Windows 10
-    - [ ] Windows 11
-    - [ ] Linux
-    - [ ] MacOS Intel
-    - [ ] MacOS ARM
+1. Improve documentation and testing.
+   - [X] This has been tested on =Emacs 27.2= & =28.0.92= using =curl= on Pop!_OS (20.04 and 22.04) and Termux.
+   - [X] All functions are documented and there are no Flycheck errors or warnings.
+   - [2/5] Test on other OSes.
+     - [ ] Windows 10
+     - [ ] Windows 11
+     - [X] Linux
+     - [X] MacOS Intel
+     - [ ] MacOS ARM
 
-+ Provide more functionality:
-  - [X] Interactively and programmatically set the tag per message as an optional parameter.
-  - [ ] Send URL as a clickable item from the Android notification shade.
-    - [ ] Special characters break this function. Might need to switch to JSON, can't url-encode curl header.
-  - [ ] Send a file attachment.
-  - [ ] Send Android intents.
-- Stretch:
-  - [ ] Provide templates for Header and Tags as a pop-up selection list.
-    - [ ] Tags completion?
-    - [ ] Header completion?
-  - [ ] Provide minor mode to capture all Emacs notifications and post them to pre-defined topics.
+2. Provide more functionality:
+   - [X] Interactively and programmatically set the tag per message as an optional parameter.
+   - [ ] Send URL as a clickable item from the Android notification shade.
+     - [ ] Special characters break this function. Might need to switch to JSON, can't url-encode curl header.
+   - [ ] Send a file attachment.
+   - [ ] Send Android intents.
+
+   - Stretch:
+     - [ ] Provide templates for Header and Tags as a pop-up selection list.
+     - [ ] Provide minor mode to capture all Emacs notifications and post them to pre-defined topics.
